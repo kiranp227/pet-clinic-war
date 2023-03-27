@@ -42,10 +42,19 @@ pipeline {
         }
         stage('Deploy') {
             steps{
-                input 'Do you want to deploy?'
                 echo "Deploying the application to Dev environment"
+                sh 'docker stop devops_container'
+                sh 'docker rm devops_container'
                 sh 'docker run -d -p 8082:8080 --restart=always --name devops_container devops_image:${BUILD_NUMBER}'
                 echo "Applicaion is successfully deployed"
+            }
+        }
+        stage('PushTheImage'){
+            steps{
+                input 'Do you want to push the image?'
+                sh 'docker login -u kiranp227 -p kocherla.900'
+                sh 'docker tag devops_image:${BUILD_NUMBER} kiranp227/devops_image:${BUILD_NUMBER}'
+                sh 'docker push kiranp227/devops_image:${BUILD_NUMBER}'
             }
         }
     }
