@@ -7,12 +7,16 @@ pipeline {
     }
     parameters {
         string defaultValue: 'Test', description: 'Enter The Branch Name', name: 'BranchName'
+        string defaultValue: 'www.Repo.git', description: 'Enter The Repo URL', name: 'RepoURL'
     }
+    environment {     
+    DOCKERHUB_CREDENTIALS= credentials('dockerhub')     
+    } 
 
     stages {                        
         stage('PullTheCode') {
             steps {
-                git branch: "${params.BranchName}", url: 'https://github.com/kiranp227/pet-clinic-war.git'
+                git branch: "${params.BranchName}", url: "${params.RepoURL}"
             }
         }
         stage('Validate') {
@@ -43,18 +47,18 @@ pipeline {
         stage('Deploy') {
             steps{
                 echo "Deploying the application to Dev environment"
-                sh 'docker stop devops_container'
-                sh 'docker rm devops_container'
-                sh 'docker run -d -p 8082:8080 --restart=always --name devops_container devops_image:${BUILD_NUMBER}'
+                sh '''docker stop devops_container
+                      docker rm devops_container
+                      docker run -d -p 8082:8080 --restart=always --name devops_container devops_image:${BUILD_NUMBER}'''
                 echo "Applicaion is successfully deployed"
             }
         }
         stage('PushTheImage'){
             steps{
                 input 'Do you want to push the image?'
-                sh 'docker login -u kiranp227 -p kocherla.900'
-                sh 'docker tag devops_image:${BUILD_NUMBER} kiranp227/devops_image:${BUILD_NUMBER}'
-                sh 'docker push kiranp227/devops_image:${BUILD_NUMBER}'
+                sh '''docker login -u $DOCKERHUB_CREDENTIALS_USR -p $DOCKERHUB_CREDENTIALS_PSW
+                      docker tag devops_image:${BUILD_NUMBER} kiranp227/devops_image:${BUILD_NUMBER}
+                      docker push kiranp227/devops_image:${BUILD_NUMBER}'''
             }
         }
     }
