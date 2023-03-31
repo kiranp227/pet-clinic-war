@@ -39,6 +39,17 @@ pipeline {
                 sh "mvn package"
             }
         }
+        stage('SonarQube Analysis') {
+            steps {
+                script {
+                     // requires SonarQube Scanner 2.8+
+                    scannerHome = tool 'sonarqube_devops'
+                }
+                withSonarQubeEnv('sonar_server') {
+                    sh "${scannerHome}/bin/sonar-scanner -Dproject.settings=sonar.properties"
+                }
+            }
+        }
         stage('BuildImage') {
             steps {
                 sh "docker build -t devops_image:${BUILD_NUMBER} ."
@@ -59,6 +70,11 @@ pipeline {
                 sh '''docker login -u $DOCKERHUB_CREDENTIALS_USR -p $DOCKERHUB_CREDENTIALS_PSW
                       docker tag devops_image:${BUILD_NUMBER} kiranp227/devops_image:${BUILD_NUMBER}
                       docker push kiranp227/devops_image:${BUILD_NUMBER}'''
+            }
+        }
+        stage('CleanWorkSpace') {
+            steps {
+                cleanWs()
             }
         }
     }
